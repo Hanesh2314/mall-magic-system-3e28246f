@@ -1,12 +1,21 @@
 
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect to dashboard if on index page
+  React.useEffect(() => {
+    if (location.pathname === '/') {
+      navigate('/dashboard');
+    }
+  }, [location.pathname, navigate]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -32,7 +41,7 @@ const Dashboard = () => {
         
         {/* Main Content Area */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
-          <Outlet />
+          <Outlet context={{ language, setLanguage }} />
         </main>
       </div>
     </div>

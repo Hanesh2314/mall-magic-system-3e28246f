@@ -1,4 +1,5 @@
 
+import React, { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,16 +13,12 @@ import InventoryPage from "./pages/InventoryPage";
 import PaymentPage from "./pages/PaymentPage";
 import IssuesPage from "./pages/IssuesPage";
 import NotFound from "./pages/NotFound";
-import { useState } from "react";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
-  
-  const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'hi' : 'en');
-  };
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -31,7 +28,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Dashboard />}>
-              <Route index element={<DashboardPage language={language} />} />
+              <Route index element={<Index />} />
               <Route path="dashboard" element={<DashboardPage language={language} />} />
               <Route path="admin" element={<AdminPage language={language} />} />
               <Route path="sales" element={<SalesPage language={language} />} />
