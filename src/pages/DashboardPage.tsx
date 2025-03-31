@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Users, Store, IndianRupee, ShoppingBag } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
-import GitHubExportButton from '@/components/GitHubExportButton';
 
 interface DashboardPageProps {
   language: 'en' | 'hi';
@@ -19,8 +18,7 @@ const translations = {
     visitors: "Monthly Visitors",
     sales: "Total Sales",
     thisMonth: "this month",
-    lastMonth: "vs last month",
-    github: "GitHub Integration"
+    lastMonth: "vs last month"
   },
   hi: {
     welcome: "मॉल मैजिक में आपका स्वागत है",
@@ -30,8 +28,7 @@ const translations = {
     visitors: "मासिक आगंतुक",
     sales: "कुल बिक्री",
     thisMonth: "इस महीने",
-    lastMonth: "पिछले महीने की तुलना में",
-    github: "GitHub एकीकरण"
+    lastMonth: "पिछले महीने की तुलना में"
   }
 };
 
@@ -80,12 +77,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ language }) => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <RevenueChart language={language} />
         <RecentTransactions language={language} />
-      </div>
-      
-      {/* GitHub Export Section */}
-      <div className="bg-card p-6 rounded-lg border">
-        <h2 className="text-xl font-medium mb-4">{t.github}</h2>
-        <GitHubExportButton language={language} />
       </div>
     </div>
   );

@@ -8,10 +8,7 @@ import {
   Users,
   ClipboardList,
   CreditCard,
-  AlertTriangle,
-  Settings,
-  HelpCircle,
-  ChevronRight
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -65,11 +62,6 @@ const navItems: NavItem[] = [
     path: '/issues',
     label: { en: 'Issues', hi: 'मुद्दे' },
     icon: AlertTriangle
-  },
-  {
-    path: '/settings',
-    label: { en: 'Settings', hi: 'सेटिंग्स' },
-    icon: Settings
   }
 ];
 
@@ -118,20 +110,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, language }) => {
           ))}
         </ul>
       </nav>
-
-      <div className="absolute bottom-0 w-full p-4">
-        <Separator className="mb-4" />
-        <NavLink
-          to="/help"
-          className={cn(
-            "flex items-center px-4 py-2 text-sidebar-foreground rounded-md hover:bg-sidebar-accent/50 transition-colors",
-            !isOpen && "justify-center"
-          )}
-        >
-          <HelpCircle size={20} className={cn(!isOpen && "mx-auto")} />
-          {isOpen && <span className="ml-3">{language === 'en' ? 'Help' : 'सहायता'}</span>}
-        </NavLink>
-      </div>
     </aside>
   );
 };
