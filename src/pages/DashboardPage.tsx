@@ -12,26 +12,26 @@ interface DashboardPageProps {
 
 const translations = {
   en: {
-    welcome: 'Welcome to Mall Magic',
-    subtitle: 'Here's an overview of your mall performance',
-    tenants: 'Total Tenants',
-    revenue: 'Monthly Revenue',
-    visitors: 'Monthly Visitors',
-    sales: 'Total Sales',
-    thisMonth: 'this month',
-    lastMonth: 'vs last month',
-    github: 'GitHub Integration'
+    welcome: "Welcome to Mall Magic",
+    subtitle: "Here's an overview of your mall performance",
+    tenants: "Total Tenants",
+    revenue: "Monthly Revenue",
+    visitors: "Monthly Visitors",
+    sales: "Total Sales",
+    thisMonth: "this month",
+    lastMonth: "vs last month",
+    github: "GitHub Integration"
   },
   hi: {
-    welcome: 'मॉल मैजिक में आपका स्वागत है',
-    subtitle: 'यहां आपके मॉल के प्रदर्शन का अवलोकन है',
-    tenants: 'कुल किरायेदार',
-    revenue: 'मासिक राजस्व',
-    visitors: 'मासिक आगंतुक',
-    sales: 'कुल बिक्री',
-    thisMonth: 'इस महीने',
-    lastMonth: 'पिछले महीने की तुलना में',
-    github: 'GitHub एकीकरण'
+    welcome: "मॉल मैजिक में आपका स्वागत है",
+    subtitle: "यहां आपके मॉल के प्रदर्शन का अवलोकन है",
+    tenants: "कुल किरायेदार",
+    revenue: "मासिक राजस्व",
+    visitors: "मासिक आगंतुक",
+    sales: "कुल बिक्री",
+    thisMonth: "इस महीने",
+    lastMonth: "पिछले महीने की तुलना में",
+    github: "GitHub एकीकरण"
   }
 };
 
