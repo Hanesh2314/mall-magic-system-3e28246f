@@ -10,6 +10,7 @@ import DashboardPage from "./pages/DashboardPage";
 import AdminPage from "./pages/AdminPage";
 import SalesPage from "./pages/SalesPage";
 import InventoryPage from "./pages/InventoryPage";
+import PurchasePage from "./pages/PurchasePage";
 import PaymentPage from "./pages/PaymentPage";
 import IssuesPage from "./pages/IssuesPage";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const App = () => {
               <Route path="admin" element={<AdminPage language={language} />} />
               <Route path="sales" element={<SalesPage language={language} />} />
               <Route path="inventory" element={<InventoryPage language={language} />} />
+              <Route path="purchase" element={<PurchasePage language={language} />} />
               <Route path="payment" element={<PaymentPage language={language} />} />
               <Route path="issues" element={<IssuesPage language={language} />} />
               <Route path="*" element={<NotFound />} />
