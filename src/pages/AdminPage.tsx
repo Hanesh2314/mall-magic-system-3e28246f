@@ -1,11 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Plus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TenantForm from '@/components/forms/TenantForm';
+import { toast } from "sonner";
 
 interface AdminPageProps {
   language: 'en' | 'hi';
@@ -48,6 +51,10 @@ const translations = {
     active: 'Active',
     pending: 'Pending',
     inactive: 'Inactive',
+    editTenant: 'Edit Tenant',
+    addNewTenant: 'Add New Tenant',
+    confirmDelete: 'Are you sure you want to delete this tenant?',
+    deleteSuccess: 'Tenant deleted successfully',
   },
   hi: {
     title: 'प्रशासन मॉड्यूल',
@@ -67,11 +74,19 @@ const translations = {
     active: 'सक्रिय',
     pending: 'लंबित',
     inactive: 'निष्क्रिय',
+    editTenant: 'किरायेदार संपादित करें',
+    addNewTenant: 'नया किरायेदार जोड़ें',
+    confirmDelete: 'क्या आप इस किरायेदार को हटाना चाहते हैं?',
+    deleteSuccess: 'किरायेदार सफलतापूर्वक हटा दिया गया',
   }
 };
 
 const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
   const t = translations[language];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   
   const getStatusTranslation = (status: string) => {
     switch(status) {
@@ -91,6 +106,32 @@ const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
     }
   };
   
+  const handleAddTenant = () => {
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleEditTenant = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeleteTenant = (id: string) => {
+    // In a real application, this would delete from the database
+    toast.success(t.deleteSuccess);
+  };
+  
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedTenant(null);
+  };
+  
+  const filteredTenants = tenants.filter(tenant => 
+    tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -101,7 +142,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
       <Card className="card-hover">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t.tenantManagement}</CardTitle>
-          <Button>
+          <Button onClick={handleAddTenant}>
             <Plus className="mr-2 h-4 w-4" />
             {t.addTenant}
           </Button>
@@ -114,6 +155,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
                 type="search"
                 placeholder={t.search}
                 className="w-full pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -132,7 +175,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tenants.map((tenant) => (
+                {filteredTenants.map((tenant) => (
                   <TableRow key={tenant.id}>
                     <TableCell className="font-medium">{tenant.id}</TableCell>
                     <TableCell>{tenant.name}</TableCell>
@@ -149,11 +192,11 @@ const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="icon" variant="ghost">
+                        <Button size="icon" variant="ghost" onClick={() => handleEditTenant(tenant)}>
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">{t.edit}</span>
                         </Button>
-                        <Button size="icon" variant="ghost">
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteTenant(tenant.id)}>
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">{t.delete}</span>
                         </Button>
@@ -166,6 +209,26 @@ const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Add Tenant Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.addNewTenant}</DialogTitle>
+          </DialogHeader>
+          <TenantForm language={language} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Tenant Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.editTenant}</DialogTitle>
+          </DialogHeader>
+          <TenantForm language={language} initialData={selectedTenant || undefined} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

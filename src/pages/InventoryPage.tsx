@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -11,9 +11,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Barcode } from 'lucide-react';
+import { Search, Plus, Barcode, Edit, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import InventoryItemForm from '@/components/forms/InventoryItemForm';
+import { toast } from "sonner";
 
 interface InventoryPageProps {
   language: 'en' | 'hi';
@@ -56,6 +59,13 @@ const translations = {
     low: 'Low',
     medium: 'Medium',
     high: 'High',
+    edit: 'Edit',
+    delete: 'Delete',
+    actions: 'Actions',
+    editItem: 'Edit Item',
+    addNewItem: 'Add New Item',
+    deleteSuccess: 'Item deleted successfully',
+    scanningBarcode: 'Scanning barcode...',
   },
   hi: {
     title: 'इन्वेंटरी मॉड्यूल',
@@ -74,11 +84,22 @@ const translations = {
     low: 'कम',
     medium: 'मध्यम',
     high: 'उच्च',
+    edit: 'संपादित करें',
+    delete: 'हटाएं',
+    actions: 'क्रियाएं',
+    editItem: 'आइटम संपादित करें',
+    addNewItem: 'नया आइटम जोड़ें',
+    deleteSuccess: 'आइटम सफलतापूर्वक हटा दिया गया',
+    scanningBarcode: 'बारकोड स्कैन किया जा रहा है...',
   }
 };
 
 const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
   const t = translations[language];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   
   const getStockLevelTranslation = (level: string) => {
     switch(level) {
@@ -115,6 +136,36 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
       default: return '';
     }
   };
+
+  const handleAddItem = () => {
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleEditItem = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeleteItem = (id: string) => {
+    // In a real application, this would delete from the database
+    toast.success(t.deleteSuccess);
+  };
+  
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleScanBarcode = () => {
+    toast.info(t.scanningBarcode);
+  };
+  
+  const filteredItems = inventoryItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.store.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -127,11 +178,11 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t.inventoryItems}</CardTitle>
           <div className="flex gap-2">
-            <Button>
+            <Button onClick={handleAddItem}>
               <Plus className="mr-2 h-4 w-4" />
               {t.addItem}
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleScanBarcode}>
               <Barcode className="mr-2 h-4 w-4" />
               {t.scanBarcode}
             </Button>
@@ -145,6 +196,8 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
                 type="search"
                 placeholder={t.search}
                 className="w-full pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -160,10 +213,11 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
                   <TableHead>{t.quantity}</TableHead>
                   <TableHead>{t.price}</TableHead>
                   <TableHead>{t.stock}</TableHead>
+                  <TableHead className="text-right">{t.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventoryItems.map((item) => (
+                {filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.id}</TableCell>
                     <TableCell>{item.name}</TableCell>
@@ -185,6 +239,18 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
                         </Badge>
                       </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button size="icon" variant="ghost" onClick={() => handleEditItem(item)}>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t.edit}</span>
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteItem(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">{t.delete}</span>
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -192,6 +258,26 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Item Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.addNewItem}</DialogTitle>
+          </DialogHeader>
+          <InventoryItemForm language={language} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.editItem}</DialogTitle>
+          </DialogHeader>
+          <InventoryItemForm language={language} initialData={selectedItem || undefined} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

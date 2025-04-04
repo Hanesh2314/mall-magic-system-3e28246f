@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Package, Calendar, IndianRupee, Search } from 'lucide-react';
+import { Package, Calendar, IndianRupee, Search, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import PurchaseItemForm from '@/components/forms/PurchaseItemForm';
+import { toast } from "sonner";
 
 interface PurchasePageProps {
   language: 'en' | 'hi';
@@ -37,9 +40,13 @@ const translations = {
     action: "Action",
     view: "View",
     edit: "Edit",
+    delete: "Delete",
     completed: "Completed",
     pending: "Pending",
-    processing: "Processing"
+    processing: "Processing",
+    editPurchase: "Edit Purchase",
+    addNewPurchase: "New Purchase Order",
+    deleteSuccess: "Purchase deleted successfully"
   },
   hi: {
     title: "खरीद प्रबंधन",
@@ -59,9 +66,13 @@ const translations = {
     action: "कार्रवाई",
     view: "देखें",
     edit: "संपादित करें",
+    delete: "हटाएं",
     completed: "पूरा हुआ",
     pending: "लंबित",
-    processing: "प्रसंस्करण"
+    processing: "प्रसंस्करण",
+    editPurchase: "खरीद संपादित करें",
+    addNewPurchase: "नया खरीद आदेश",
+    deleteSuccess: "खरीद सफलतापूर्वक हटा दी गई"
   }
 };
 
@@ -112,6 +123,34 @@ const purchaseData = [
 const PurchasePage: React.FC<PurchasePageProps> = ({ language }) => {
   const t = translations[language];
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<(typeof purchaseData)[0] | null>(null);
+
+  const handleAddPurchase = () => {
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleEditPurchase = (purchase: (typeof purchaseData)[0]) => {
+    setSelectedPurchase(purchase);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeletePurchase = (id: string) => {
+    // In a real application, this would delete from the database
+    toast.success(t.deleteSuccess);
+  };
+  
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedPurchase(null);
+  };
+
+  const filteredData = purchaseData.filter(purchase => 
+    purchase.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    purchase.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -120,7 +159,7 @@ const PurchasePage: React.FC<PurchasePageProps> = ({ language }) => {
           <h1 className="text-3xl font-bold">{t.title}</h1>
           <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
-        <Button className="bg-indian-purple hover:bg-indian-purple/90">
+        <Button className="bg-indian-purple hover:bg-indian-purple/90" onClick={handleAddPurchase}>
           <Package className="mr-2 h-4 w-4" />
           {t.newPurchase}
         </Button>
@@ -190,7 +229,7 @@ const PurchasePage: React.FC<PurchasePageProps> = ({ language }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {purchaseData.map((purchase) => (
+            {filteredData.map((purchase) => (
               <TableRow key={purchase.id}>
                 <TableCell className="font-medium">{purchase.id}</TableCell>
                 <TableCell>{purchase.vendor}</TableCell>
@@ -208,18 +247,42 @@ const PurchasePage: React.FC<PurchasePageProps> = ({ language }) => {
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="outline" size="sm" className="h-8 mr-2">
-                    {t.view}
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-8">
-                    {t.edit}
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => handleEditPurchase(purchase)}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      {t.edit}
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => handleDeletePurchase(purchase.id)}>
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      {t.delete}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Add Purchase Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.addNewPurchase}</DialogTitle>
+          </DialogHeader>
+          <PurchaseItemForm language={language} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Purchase Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.editPurchase}</DialogTitle>
+          </DialogHeader>
+          <PurchaseItemForm language={language} initialData={selectedPurchase || undefined} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
