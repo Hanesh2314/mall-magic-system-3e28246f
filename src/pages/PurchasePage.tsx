@@ -76,8 +76,18 @@ const translations = {
   }
 };
 
-// Sample data
-const purchaseData = [
+// Define the Purchase type to match the expected type by PurchaseItemForm
+interface Purchase {
+  id: string;
+  vendor: string;
+  date: string;
+  items: number;
+  value: string;
+  status: 'completed' | 'pending' | 'processing';
+}
+
+// Sample data with explicit type
+const purchaseData: Purchase[] = [
   {
     id: "PO-2023-001",
     vendor: "ABC Supplies",
@@ -125,13 +135,13 @@ const PurchasePage: React.FC<PurchasePageProps> = ({ language }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedPurchase, setSelectedPurchase] = useState<(typeof purchaseData)[0] | null>(null);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
 
   const handleAddPurchase = () => {
     setIsAddDialogOpen(true);
   };
   
-  const handleEditPurchase = (purchase: (typeof purchaseData)[0]) => {
+  const handleEditPurchase = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
     setIsEditDialogOpen(true);
   };
