@@ -1,0 +1,3392 @@
+
+# Mall Magic System - Full Codebase Overview
+
+## How It All Works (Brief Explanation in 30 Words)
+The Mall Magic system uses React with TypeScript, Tailwind CSS, and shadcn/ui components. Pages are connected via React Router, and language toggle enables Hindi/English interface switching across all modules.
+
+## Core Architecture
+
+### App.tsx
+```tsx
+import React, { useState } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Dashboard from "./components/layout/Dashboard";
+import DashboardPage from "./pages/DashboardPage";
+import AdminPage from "./pages/AdminPage";
+import SalesPage from "./pages/SalesPage";
+import InventoryPage from "./pages/InventoryPage";
+import PurchasePage from "./pages/PurchasePage";
+import PaymentPage from "./pages/PaymentPage";
+import IssuesPage from "./pages/IssuesPage";
+import NotFound from "./pages/NotFound";
+import Index from "./pages/Index";
+
+const queryClient = new QueryClient();
+
+const App = () => {
+  const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Dashboard />}>
+              <Route index element={<Index />} />
+              <Route path="dashboard" element={<DashboardPage language={language} />} />
+              <Route path="admin" element={<AdminPage language={language} />} />
+              <Route path="sales" element={<SalesPage language={language} />} />
+              <Route path="inventory" element={<InventoryPage language={language} />} />
+              <Route path="purchase" element={<PurchasePage language={language} />} />
+              <Route path="payment" element={<PaymentPage language={language} />} />
+              <Route path="issues" element={<IssuesPage language={language} />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default App;
+```
+
+### Dashboard Layout
+
+#### Dashboard.tsx
+```tsx
+import React, { useState } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import Header from './Header';
+
+const Dashboard = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect to dashboard if on index page
+  React.useEffect(() => {
+    if (location.pathname === '/') {
+      navigate('/dashboard');
+    }
+  }, [location.pathname, navigate]);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'hi' : 'en');
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar isOpen={sidebarOpen} language={language} />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header 
+          toggleSidebar={toggleSidebar} 
+          sidebarOpen={sidebarOpen} 
+          language={language}
+          toggleLanguage={toggleLanguage}
+        />
+        
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
+          <Outlet context={{ language, setLanguage }} />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
+```
+
+#### Header.tsx
+```tsx
+import React from 'react';
+import { 
+  Bell, 
+  MessageSquare, 
+  ChevronDown, 
+  Menu, 
+  Search,
+  Globe
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+interface HeaderProps {
+  toggleSidebar: () => void;
+  sidebarOpen: boolean;
+  language: 'en' | 'hi';
+  toggleLanguage: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ 
+  toggleSidebar, 
+  sidebarOpen,
+  language,
+  toggleLanguage
+}) => {
+  const translations = {
+    en: {
+      search: "Search...",
+      profile: "My Profile",
+      settings: "Settings",
+      help: "Help & Documentation",
+      logout: "Log out",
+      notifications: "Notifications",
+      messages: "Messages",
+    },
+    hi: {
+      search: "खोज...",
+      profile: "मेरी प्रोफाइल",
+      settings: "सेटिंग्स",
+      help: "सहायता और दस्तावेज़",
+      logout: "लॉग आउट",
+      notifications: "सूचनाएं",
+      messages: "संदेश",
+    }
+  };
+
+  const t = translations[language];
+
+  return (
+    <header className="sticky top-0 z-10 bg-white shadow-sm">
+      <div className="px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={toggleSidebar}
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+            
+            <div className="ml-4 hidden md:block relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder={t.search}
+                className="pl-10 pr-4 py-2 w-64 rounded-md bg-gray-100 border-0 focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={toggleLanguage}
+              className="relative"
+              aria-label="Toggle language"
+            >
+              <Globe className="h-5 w-5" />
+              <span className="absolute top-0 right-0 text-xs font-bold">
+                {language === 'en' ? 'EN' : 'HI'}
+              </span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon"
+              aria-label={t.notifications}
+              className="relative"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon"
+              aria-label={t.messages}
+              className="relative"
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <div className="flex items-center">
+                    <img
+                      alt="User"
+                      className="h-8 w-8 rounded-full"
+                      src="https://github.com/shadcn.png"
+                    />
+                    <ChevronDown className="ml-2 h-4 w-4 text-gray-500" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>{t.profile}</DropdownMenuItem>
+                <DropdownMenuItem>{t.settings}</DropdownMenuItem>
+                <DropdownMenuItem>{t.help}</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>{t.logout}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
+```
+
+#### Sidebar.tsx
+```tsx
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { 
+  LayoutDashboard, 
+  ShoppingBag, 
+  Package, 
+  CreditCard, 
+  ClipboardList, 
+  Users, 
+  Settings, 
+  HelpCircle,
+  AlertTriangle
+} from 'lucide-react';
+
+interface SidebarProps {
+  isOpen: boolean;
+  language: 'en' | 'hi';
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, language }) => {
+  // Translations
+  const translations = {
+    en: {
+      dashboard: "Dashboard",
+      admin: "Admin",
+      sales: "Sales",
+      inventory: "Inventory",
+      purchase: "Purchase",
+      payment: "Payment",
+      issues: "Issues",
+      settings: "Settings",
+      help: "Help & Support"
+    },
+    hi: {
+      dashboard: "डैशबोर्ड",
+      admin: "व्यवस्थापक",
+      sales: "बिक्री",
+      inventory: "इन्वेंटरी",
+      purchase: "खरीद",
+      payment: "भुगतान",
+      issues: "समस्याएं",
+      settings: "सेटिंग्स",
+      help: "सहायता"
+    }
+  };
+
+  const t = translations[language];
+
+  const navigation = [
+    { name: t.dashboard, href: '/dashboard', icon: LayoutDashboard },
+    { name: t.admin, href: '/admin', icon: Users },
+    { name: t.sales, href: '/sales', icon: ShoppingBag },
+    { name: t.inventory, href: '/inventory', icon: Package },
+    { name: t.purchase, href: '/purchase', icon: ClipboardList },
+    { name: t.payment, href: '/payment', icon: CreditCard },
+    { name: t.issues, href: '/issues', icon: AlertTriangle },
+    { name: t.settings, href: '/settings', icon: Settings },
+    { name: t.help, href: '/help', icon: HelpCircle },
+  ];
+
+  return (
+    <aside 
+      className={cn(
+        "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 transition-all duration-300 ease-in-out",
+        isOpen ? "w-64" : "w-16"
+      )}
+    >
+      <div className="h-full px-3 py-4 flex flex-col">
+        <div className={cn(
+          "flex items-center mb-6 px-2",
+          isOpen ? "justify-start" : "justify-center"
+        )}>
+          <div className="bg-indian-purple text-white h-10 w-10 rounded-lg flex items-center justify-center text-xl font-bold">
+            MM
+          </div>
+          {isOpen && (
+            <h2 className="ml-3 text-xl font-semibold text-gray-800">
+              {language === 'en' ? 'Mall Magic' : 'मॉल मैजिक'}
+            </h2>
+          )}
+        </div>
+        
+        <nav className="space-y-1 flex-1">
+          {navigation.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.href}
+              className={({ isActive }) => cn(
+                "group flex items-center px-2 py-2 text-base font-medium rounded-md transition-all",
+                isActive
+                  ? "bg-indian-purple text-white"
+                  : "text-gray-700 hover:bg-gray-100",
+                !isOpen && "justify-center"
+              )}
+            >
+              <item.icon className={cn(
+                "flex-shrink-0 h-6 w-6",
+                !isOpen && "mr-0"
+              )} />
+              {isOpen && <span className="ml-3">{item.name}</span>}
+            </NavLink>
+          ))}
+        </nav>
+        
+        <div className="pt-4 mt-6 border-t border-gray-200">
+          <div className={cn(
+            "flex items-center px-2 py-2",
+            !isOpen && "justify-center"
+          )}>
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200">
+              <img 
+                src="https://github.com/shadcn.png" 
+                alt="User" 
+                className="h-full w-full rounded-full" 
+              />
+            </div>
+            {isOpen && (
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">Admin User</p>
+                <p className="text-xs text-gray-500">admin@mallmagic.com</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;
+```
+
+### Pages and Features
+
+#### Dashboard Page
+```tsx
+import React from 'react';
+import { Users, Store, IndianRupee, ShoppingBag } from 'lucide-react';
+import StatCard from '@/components/dashboard/StatCard';
+import RevenueChart from '@/components/dashboard/RevenueChart';
+import RecentTransactions from '@/components/dashboard/RecentTransactions';
+
+interface DashboardPageProps {
+  language: 'en' | 'hi';
+}
+
+const translations = {
+  en: {
+    welcome: "Welcome to Mall Magic",
+    subtitle: "Here's an overview of your mall performance",
+    tenants: "Total Tenants",
+    revenue: "Monthly Revenue",
+    visitors: "Monthly Visitors",
+    sales: "Total Sales",
+    thisMonth: "this month",
+    lastMonth: "vs last month"
+  },
+  hi: {
+    welcome: "मॉल मैजिक में आपका स्वागत है",
+    subtitle: "यहां आपके मॉल के प्रदर्शन का अवलोकन है",
+    tenants: "कुल किरायेदार",
+    revenue: "मासिक राजस्व",
+    visitors: "मासिक आगंतुक",
+    sales: "कुल बिक्री",
+    thisMonth: "इस महीने",
+    lastMonth: "पिछले महीने की तुलना में"
+  }
+};
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ language }) => {
+  const t = translations[language];
+  
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-bold text-3xl">{t.welcome}</h1>
+        <p className="text-muted-foreground">{t.subtitle}</p>
+      </div>
+      
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard 
+          title={t.tenants}
+          value="124"
+          icon={<Users size={24} />}
+          trend={{ value: 4, isPositive: true }}
+          description={t.lastMonth}
+        />
+        <StatCard 
+          title={t.revenue}
+          value="₹32,45,500"
+          icon={<IndianRupee size={24} />}
+          trend={{ value: 12, isPositive: true }}
+          description={t.lastMonth}
+        />
+        <StatCard 
+          title={t.visitors}
+          value="1,42,350"
+          icon={<Users size={24} />}
+          trend={{ value: 2, isPositive: false }}
+          description={t.lastMonth}
+        />
+        <StatCard 
+          title={t.sales}
+          value="₹1,25,45,000"
+          icon={<ShoppingBag size={24} />}
+          description={t.thisMonth}
+        />
+      </div>
+      
+      {/* Charts and Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <RevenueChart language={language} />
+        <RecentTransactions language={language} />
+      </div>
+    </div>
+  );
+};
+
+export default DashboardPage;
+```
+
+#### Admin Page
+```tsx
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Edit, Trash2, Plus, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TenantForm from '@/components/forms/TenantForm';
+import { toast } from "sonner";
+
+interface AdminPageProps {
+  language: 'en' | 'hi';
+}
+
+interface Tenant {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  gstin: string;
+  status: 'active' | 'pending' | 'inactive';
+}
+
+const tenants: Tenant[] = [
+  { id: 'T001', name: 'Chennai Silks', category: 'Clothing', location: 'Ground Floor, G-12', gstin: '33AABCT1234Z1Z5', status: 'active' },
+  { id: 'T002', name: 'Bombay Electronics', category: 'Electronics', location: 'First Floor, F-05', gstin: '27AADCB9876Y1Z3', status: 'active' },
+  { id: 'T003', name: 'Delhi Sweets', category: 'Food & Beverages', location: 'Ground Floor, G-22', gstin: '07AAECR7654Z1Z8', status: 'active' },
+  { id: 'T004', name: 'Mumbai Fashion', category: 'Fashion', location: 'Second Floor, S-15', gstin: '27AAHCM5432X1Z7', status: 'pending' },
+  { id: 'T005', name: 'Kolkata Books', category: 'Books & Stationery', location: 'First Floor, F-18', gstin: '19AAACP8765Q1Z2', status: 'inactive' },
+  { id: 'T006', name: 'Bangalore Tech', category: 'Electronics', location: 'Second Floor, S-07', gstin: '29AADCT4567R1Z9', status: 'active' },
+];
+
+const translations = {
+  en: {
+    title: 'Admin Module',
+    subtitle: 'Manage mall tenants, staff and operations',
+    tenantManagement: 'Tenant Management',
+    search: 'Search tenants...',
+    addTenant: 'Add Tenant',
+    id: 'ID',
+    name: 'Name',
+    category: 'Category',
+    location: 'Location',
+    gstin: 'GSTIN',
+    status: 'Status',
+    actions: 'Actions',
+    edit: 'Edit',
+    delete: 'Delete',
+    active: 'Active',
+    pending: 'Pending',
+    inactive: 'Inactive',
+    editTenant: 'Edit Tenant',
+    addNewTenant: 'Add New Tenant',
+    confirmDelete: 'Are you sure you want to delete this tenant?',
+    deleteSuccess: 'Tenant deleted successfully',
+  },
+  hi: {
+    title: 'प्रशासन मॉड्यूल',
+    subtitle: 'मॉल के किरायेदारों, कर्मचारियों और संचालन का प्रबंधन करें',
+    tenantManagement: 'किरायेदार प्रबंधन',
+    search: 'किरायेदार खोजें...',
+    addTenant: 'किरायेदार जोड़ें',
+    id: 'आईडी',
+    name: 'नाम',
+    category: 'श्रेणी',
+    location: 'स्थान',
+    gstin: 'जीएसटीआईएन',
+    status: 'स्थिति',
+    actions: 'क्रियाएं',
+    edit: 'संपादित करें',
+    delete: 'हटाएं',
+    active: 'सक्रिय',
+    pending: 'लंबित',
+    inactive: 'निष्क्रिय',
+    editTenant: 'किरायेदार संपादित करें',
+    addNewTenant: 'नया किरायेदार जोड़ें',
+    confirmDelete: 'क्या आप इस किरायेदार को हटाना चाहते हैं?',
+    deleteSuccess: 'किरायेदार सफलतापूर्वक हटा दिया गया',
+  }
+};
+
+const AdminPage: React.FC<AdminPageProps> = ({ language }) => {
+  const t = translations[language];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  
+  const getStatusTranslation = (status: string) => {
+    switch(status) {
+      case 'active': return t.active;
+      case 'pending': return t.pending;
+      case 'inactive': return t.inactive;
+      default: return status;
+    }
+  };
+  
+  const getStatusClassName = (status: string) => {
+    switch(status) {
+      case 'active': return 'bg-indian-green bg-opacity-10 border-0 text-indian-green';
+      case 'pending': return 'bg-indian-orange bg-opacity-10 border-0 text-indian-orange';
+      case 'inactive': return 'bg-indian-red bg-opacity-10 border-0 text-indian-red';
+      default: return '';
+    }
+  };
+  
+  const handleAddTenant = () => {
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleEditTenant = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeleteTenant = (id: string) => {
+    // In a real application, this would delete from the database
+    toast.success(t.deleteSuccess);
+  };
+  
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedTenant(null);
+  };
+  
+  const filteredTenants = tenants.filter(tenant => 
+    tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-bold text-3xl">{t.title}</h1>
+        <p className="text-muted-foreground">{t.subtitle}</p>
+      </div>
+      
+      <Card className="card-hover">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{t.tenantManagement}</CardTitle>
+          <Button onClick={handleAddTenant}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t.addTenant}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between mb-6">
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t.search}
+                className="w-full pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.id}</TableHead>
+                  <TableHead>{t.name}</TableHead>
+                  <TableHead>{t.category}</TableHead>
+                  <TableHead>{t.location}</TableHead>
+                  <TableHead>{t.gstin}</TableHead>
+                  <TableHead>{t.status}</TableHead>
+                  <TableHead className="text-right">{t.actions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTenants.map((tenant) => (
+                  <TableRow key={tenant.id}>
+                    <TableCell className="font-medium">{tenant.id}</TableCell>
+                    <TableCell>{tenant.name}</TableCell>
+                    <TableCell>{tenant.category}</TableCell>
+                    <TableCell>{tenant.location}</TableCell>
+                    <TableCell>{tenant.gstin}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={getStatusClassName(tenant.status)}
+                      >
+                        {getStatusTranslation(tenant.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button size="icon" variant="ghost" onClick={() => handleEditTenant(tenant)}>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t.edit}</span>
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteTenant(tenant.id)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">{t.delete}</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Add Tenant Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.addNewTenant}</DialogTitle>
+          </DialogHeader>
+          <TenantForm language={language} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Tenant Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.editTenant}</DialogTitle>
+          </DialogHeader>
+          <TenantForm language={language} initialData={selectedTenant || undefined} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminPage;
+```
+
+#### Inventory Page
+```tsx
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Search, Plus, Barcode, Edit, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import InventoryItemForm from '@/components/forms/InventoryItemForm';
+import { toast } from "sonner";
+
+interface InventoryPageProps {
+  language: 'en' | 'hi';
+}
+
+interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  store: string;
+  quantity: number;
+  price: number;
+  stockLevel: 'low' | 'medium' | 'high';
+}
+
+const inventoryItems: InventoryItem[] = [
+  { id: 'I001', name: 'Cotton Saree', category: 'Clothing', store: 'Chennai Silks', quantity: 24, price: 3500, stockLevel: 'medium' },
+  { id: 'I002', name: 'LED TV', category: 'Electronics', store: 'Bombay Electronics', quantity: 8, price: 42000, stockLevel: 'low' },
+  { id: 'I003', name: 'Milk Cake', category: 'Food', store: 'Delhi Sweets', quantity: 150, price: 250, stockLevel: 'high' },
+  { id: 'I004', name: 'Designer Handbag', category: 'Fashion', store: 'Mumbai Fashion', quantity: 12, price: 5999, stockLevel: 'medium' },
+  { id: 'I005', name: 'Bestseller Novel', category: 'Books', store: 'Kolkata Books', quantity: 5, price: 499, stockLevel: 'low' },
+  { id: 'I006', name: 'Wireless Earpods', category: 'Electronics', store: 'Bangalore Tech', quantity: 35, price: 7999, stockLevel: 'high' },
+];
+
+const translations = {
+  en: {
+    title: 'Inventory Module',
+    subtitle: 'Track and manage inventory across all mall stores',
+    inventoryItems: 'Inventory Items',
+    search: 'Search items...',
+    addItem: 'Add Item',
+    scanBarcode: 'Scan Barcode',
+    id: 'ID',
+    name: 'Item Name',
+    category: 'Category',
+    store: 'Store',
+    quantity: 'Qty',
+    price: 'Price',
+    stock: 'Stock Level',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+    edit: 'Edit',
+    delete: 'Delete',
+    actions: 'Actions',
+    editItem: 'Edit Item',
+    addNewItem: 'Add New Item',
+    deleteSuccess: 'Item deleted successfully',
+    scanningBarcode: 'Scanning barcode...',
+  },
+  hi: {
+    title: 'इन्वेंटरी मॉड्यूल',
+    subtitle: 'सभी मॉल स्टोर में इन्वेंटरी का प्रबंधन करें',
+    inventoryItems: 'इन्वेंटरी आइटम',
+    search: 'आइटम खोजें...',
+    addItem: 'आइटम जोड़ें',
+    scanBarcode: 'बारकोड स्कैन करें',
+    id: 'आईडी',
+    name: 'आइटम नाम',
+    category: 'श्रेणी',
+    store: 'स्टोर',
+    quantity: 'मात्रा',
+    price: 'मूल्य',
+    stock: 'स्टॉक स्तर',
+    low: 'कम',
+    medium: 'मध्यम',
+    high: 'उच्च',
+    edit: 'संपादित करें',
+    delete: 'हटाएं',
+    actions: 'क्रियाएं',
+    editItem: 'आइटम संपादित करें',
+    addNewItem: 'नया आइटम जोड़ें',
+    deleteSuccess: 'आइटम सफलतापूर्वक हटा दिया गया',
+    scanningBarcode: 'बारकोड स्कैन किया जा रहा है...',
+  }
+};
+
+const InventoryPage: React.FC<InventoryPageProps> = ({ language }) => {
+  const t = translations[language];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  
+  const getStockLevelTranslation = (level: string) => {
+    switch(level) {
+      case 'low': return t.low;
+      case 'medium': return t.medium;
+      case 'high': return t.high;
+      default: return level;
+    }
+  };
+  
+  const getStockLevelColor = (level: string) => {
+    switch(level) {
+      case 'low': return 'bg-indian-red bg-opacity-10 border-0 text-indian-red';
+      case 'medium': return 'bg-indian-orange bg-opacity-10 border-0 text-indian-orange';
+      case 'high': return 'bg-indian-green bg-opacity-10 border-0 text-indian-green';
+      default: return '';
+    }
+  };
+  
+  const getStockProgress = (level: string) => {
+    switch(level) {
+      case 'low': return 20;
+      case 'medium': return 55;
+      case 'high': return 85;
+      default: return 0;
+    }
+  };
+  
+  const getStockProgressColor = (level: string) => {
+    switch(level) {
+      case 'low': return 'bg-indian-red';
+      case 'medium': return 'bg-indian-orange';
+      case 'high': return 'bg-indian-green';
+      default: return '';
+    }
+  };
+
+  const handleAddItem = () => {
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleEditItem = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeleteItem = (id: string) => {
+    // In a real application, this would delete from the database
+    toast.success(t.deleteSuccess);
+  };
+  
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleScanBarcode = () => {
+    toast.info(t.scanningBarcode);
+  };
+  
+  const filteredItems = inventoryItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.store.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-bold text-3xl">{t.title}</h1>
+        <p className="text-muted-foreground">{t.subtitle}</p>
+      </div>
+      
+      <Card className="card-hover">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{t.inventoryItems}</CardTitle>
+          <div className="flex gap-2">
+            <Button onClick={handleAddItem}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t.addItem}
+            </Button>
+            <Button variant="outline" onClick={handleScanBarcode}>
+              <Barcode className="mr-2 h-4 w-4" />
+              {t.scanBarcode}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center mb-6">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t.search}
+                className="w-full pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.id}</TableHead>
+                  <TableHead>{t.name}</TableHead>
+                  <TableHead>{t.category}</TableHead>
+                  <TableHead>{t.store}</TableHead>
+                  <TableHead>{t.quantity}</TableHead>
+                  <TableHead>{t.price}</TableHead>
+                  <TableHead>{t.stock}</TableHead>
+                  <TableHead className="text-right">{t.actions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.id}</TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.category}</TableCell>
+                    <TableCell>{item.store}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell className="inr">{item.price.toLocaleString('en-IN')}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Progress 
+                          value={getStockProgress(item.stockLevel)} 
+                          className={`h-2 w-16 ${getStockProgressColor(item.stockLevel)}`} 
+                        />
+                        <Badge
+                          variant="outline"
+                          className={getStockLevelColor(item.stockLevel)}
+                        >
+                          {getStockLevelTranslation(item.stockLevel)}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button size="icon" variant="ghost" onClick={() => handleEditItem(item)}>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t.edit}</span>
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteItem(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">{t.delete}</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Add Item Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.addNewItem}</DialogTitle>
+          </DialogHeader>
+          <InventoryItemForm language={language} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.editItem}</DialogTitle>
+          </DialogHeader>
+          <InventoryItemForm language={language} initialData={selectedItem || undefined} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default InventoryPage;
+```
+
+#### Purchase Page
+```tsx
+import React, { useState } from 'react';
+import { Package, Calendar, IndianRupee, Search, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import PurchaseItemForm from '@/components/forms/PurchaseItemForm';
+import { toast } from "sonner";
+
+interface PurchasePageProps {
+  language: 'en' | 'hi';
+}
+
+const translations = {
+  en: {
+    title: "Purchase Management",
+    subtitle: "Track and manage all your mall purchases",
+    search: "Search purchases...",
+    newPurchase: "New Purchase",
+    totalPurchases: "Total Purchases",
+    pendingOrders: "Pending Orders",
+    thisMonth: "This Month",
+    amount: "Total Amount",
+    orderID: "Order ID",
+    vendor: "Vendor",
+    date: "Date",
+    items: "Items",
+    value: "Value",
+    status: "Status",
+    action: "Action",
+    view: "View",
+    edit: "Edit",
+    delete: "Delete",
+    completed: "Completed",
+    pending: "Pending",
+    processing: "Processing",
+    editPurchase: "Edit Purchase",
+    addNewPurchase: "New Purchase Order",
+    deleteSuccess: "Purchase deleted successfully"
+  },
+  hi: {
+    title: "खरीद प्रबंधन",
+    subtitle: "अपने सभी मॉल की खरीदारी को ट्रैक करें और प्रबंधित करें",
+    search: "खरीदारी खोजें...",
+    newPurchase: "नई खरीद",
+    totalPurchases: "कुल खरीदारी",
+    pendingOrders: "लंबित आदेश",
+    thisMonth: "इस महीने",
+    amount: "कुल राशि",
+    orderID: "आदेश आईडी",
+    vendor: "विक्रेता",
+    date: "तारीख",
+    items: "आइटम",
+    value: "मूल्य",
+    status: "स्थिति",
+    action: "कार्रवाई",
+    view: "देखें",
+    edit: "संपादित करें",
+    delete: "हटाएं",
+    completed: "पूरा हुआ",
+    pending: "लंबित",
+    processing: "प्रसंस्करण",
+    editPurchase: "खरीद संपादित करें",
+    addNewPurchase: "नया खरीद आदेश",
+    deleteSuccess: "खरीद सफलतापूर्वक हटा दी गई"
+  }
+};
+
+// Define the Purchase type to match the expected type by PurchaseItemForm
+interface Purchase {
+  id: string;
+  vendor: string;
+  date: string;
+  items: number;
+  value: string;
+  status: 'completed' | 'pending' | 'processing';
+}
+
+// Sample data with explicit type
+const purchaseData: Purchase[] = [
+  {
+    id: "PO-2023-001",
+    vendor: "ABC Supplies",
+    date: "2023-03-10",
+    items: 24,
+    value: "₹1,45,000",
+    status: "completed"
+  },
+  {
+    id: "PO-2023-002",
+    vendor: "XYZ Distributors",
+    date: "2023-03-15",
+    items: 12,
+    value: "₹85,000",
+    status: "pending"
+  },
+  {
+    id: "PO-2023-003",
+    vendor: "Global Imports",
+    date: "2023-03-18",
+    items: 8,
+    value: "₹1,20,000",
+    status: "processing"
+  },
+  {
+    id: "PO-2023-004",
+    vendor: "Metro Suppliers",
+    date: "2023-03-22",
+    items: 16,
+    value: "₹75,000",
+    status: "completed"
+  },
+  {
+    id: "PO-2023-005",
+    vendor: "City Wholesalers",
+    date: "2023-03-25",
+    items: 32,
+    value: "₹2,25,000",
+    status: "pending"
+  }
+];
+
+const PurchasePage: React.FC<PurchasePageProps> = ({ language }) => {
+  const t = translations[language];
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+
+  const handleAddPurchase = () => {
+    setIsAddDialogOpen(true);
+  };
+  
+  const handleEditPurchase = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeletePurchase = (id: string) => {
+    // In a real application, this would delete from the database
+    toast.success(t.deleteSuccess);
+  };
+  
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedPurchase(null);
+  };
+
+  const filteredData = purchaseData.filter(purchase => 
+    purchase.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    purchase.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">{t.title}</h1>
+          <p className="text-muted-foreground">{t.subtitle}</p>
+        </div>
+        <Button className="bg-indian-purple hover:bg-indian-purple/90" onClick={handleAddPurchase}>
+          <Package className="mr-2 h-4 w-4" />
+          {t.newPurchase}
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t.totalPurchases}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">40</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t.pendingOrders}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">12</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t.amount} <span className="text-xs">({t.thisMonth})</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">₹8,50,000</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t.search}
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Purchase Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t.orderID}</TableHead>
+              <TableHead>{t.vendor}</TableHead>
+              <TableHead>{t.date}</TableHead>
+              <TableHead className="text-right">{t.items}</TableHead>
+              <TableHead className="text-right">{t.value}</TableHead>
+              <TableHead>{t.status}</TableHead>
+              <TableHead className="text-right">{t.action}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredData.map((purchase) => (
+              <TableRow key={purchase.id}>
+                <TableCell className="font-medium">{purchase.id}</TableCell>
+                <TableCell>{purchase.vendor}</TableCell>
+                <TableCell>{purchase.date}</TableCell>
+                <TableCell className="text-right">{purchase.items}</TableCell>
+                <TableCell className="text-right">{purchase.value}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
+                    purchase.status === 'completed' ? 'bg-green-50 text-green-700' : 
+                    purchase.status === 'pending' ? 'bg-yellow-50 text-yellow-700' : 
+                    'bg-blue-50 text-blue-700'
+                  }`}>
+                    {purchase.status === 'completed' ? t.completed : 
+                     purchase.status === 'pending' ? t.pending : t.processing}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => handleEditPurchase(purchase)}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      {t.edit}
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => handleDeletePurchase(purchase.id)}>
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      {t.delete}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Add Purchase Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.addNewPurchase}</DialogTitle>
+          </DialogHeader>
+          <PurchaseItemForm language={language} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Purchase Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.editPurchase}</DialogTitle>
+          </DialogHeader>
+          <PurchaseItemForm language={language} initialData={selectedPurchase || undefined} onSuccess={handleFormSuccess} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default PurchasePage;
+```
+
+#### Sales Page
+```tsx
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Search, Filter, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from 'recharts';
+
+interface SalesPageProps {
+  language: 'en' | 'hi';
+}
+
+interface SaleTransaction {
+  id: string;
+  store: string;
+  date: string;
+  amount: number;
+  paymentMethod: string;
+  gst: number;
+}
+
+const sales: SaleTransaction[] = [
+  { id: 'S001', store: 'Chennai Silks', date: '2023-11-14', amount: 42500, paymentMethod: 'Card', gst: 7650 },
+  { id: 'S002', store: 'Bombay Electronics', date: '2023-11-14', amount: 35750, paymentMethod: 'UPI', gst: 6435 },
+  { id: 'S003', store: 'Delhi Sweets', date: '2023-11-13', amount: 12999, paymentMethod: 'Cash', gst: 2340 },
+  { id: 'S004', store: 'Mumbai Fashion', date: '2023-11-13', amount: 28499, paymentMethod: 'Card', gst: 5130 },
+  { id: 'S005', store: 'Kolkata Books', date: '2023-11-12', amount: 8750, paymentMethod: 'UPI', gst: 1575 },
+  { id: 'S006', store: 'Bangalore Tech', date: '2023-11-12', amount: 65000, paymentMethod: 'Card', gst: 11700 },
+];
+
+const categoryData = [
+  { name: 'Fashion', value: 120000 },
+  { name: 'Electronics', value: 180000 },
+  { name: 'Food & Beverages', value: 60000 },
+  { name: 'Books & Stationery', value: 30000 },
+  { name: 'Others', value: 45000 },
+];
+
+const COLORS = ['#6E59A5', '#F97316', '#16A34A', '#DC2626', '#6B7280'];
+
+const translations = {
+  en: {
+    title: 'Sales Module',
+    subtitle: 'Track and analyze sales transactions',
+    salesTransactions: 'Sales Transactions',
+    search: 'Search transactions...',
+    filter: 'Filter',
+    export: 'Export CSV',
+    id: 'ID',
+    store: 'Store',
+    date: 'Date',
+    amount: 'Amount',
+    paymentMethod: 'Payment Method',
+    gst: 'GST',
+    categoryBreakdown: 'Sales by Category',
+  },
+  hi: {
+    title: 'बिक्री मॉड्यूल',
+    subtitle: 'बिक्री लेनदेन को ट्रैक और विश्लेषण करें',
+    salesTransactions: 'बिक्री लेनदेन',
+    search: 'लेनदेन खोजें...',
+    filter: 'फ़िल्टर',
+    export: 'CSV निर्यात करें',
+    id: 'आईडी',
+    store: 'स्टोर',
+    date: 'तारीख',
+    amount: 'राशि',
+    paymentMethod: 'भुगतान विधि',
+    gst: 'जीएसटी',
+    categoryBreakdown: 'श्रेणी के अनुसार बिक्री',
+  }
+};
+
+const SalesPage: React.FC<SalesPageProps> = ({ language }) => {
+  const t = translations[language];
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat(language === 'en' ? 'en-IN' : 'hi-IN').format(date);
+  };
+  
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+  
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-bold text-3xl">{t.title}</h1>
+        <p className="text-muted-foreground">{t.subtitle}</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 card-hover">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{t.salesTransactions}</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                {t.filter}
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                {t.export}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center mb-6">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder={t.search}
+                  className="w-full pl-9"
+                />
+              </div>
+            </div>
+            
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.id}</TableHead>
+                    <TableHead>{t.store}</TableHead>
+                    <TableHead>{t.date}</TableHead>
+                    <TableHead>{t.amount}</TableHead>
+                    <TableHead>{t.paymentMethod}</TableHead>
+                    <TableHead>{t.gst}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sales.map((sale) => (
+                    <TableRow key={sale.id}>
+                      <TableCell className="font-medium">{sale.id}</TableCell>
+                      <TableCell>{sale.store}</TableCell>
+                      <TableCell>{formatDate(sale.date)}</TableCell>
+                      <TableCell className="inr">{sale.amount.toLocaleString('en-IN')}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-secondary/50">
+                          {sale.paymentMethod}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="inr">{sale.gst.toLocaleString('en-IN')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="card-hover">
+          <CardHeader>
+            <CardTitle>{t.categoryBreakdown}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, '']} 
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default SalesPage;
+```
+
+#### Payment Page
+```tsx
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Search, Download, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface PaymentPageProps {
+  language: 'en' | 'hi';
+}
+
+type PaymentStatus = 'paid' | 'pending' | 'failed';
+
+interface Payment {
+  id: string;
+  date: string;
+  store: string;
+  amount: number;
+  mode: string;
+  status: PaymentStatus;
+  invoiceId: string;
+}
+
+const payments: Payment[] = [
+  { 
+    id: 'P001', 
+    date: '2023-11-15', 
+    store: 'Chennai Silks', 
+    amount: 42500, 
+    mode: 'Credit Card', 
+    status: 'paid',
+    invoiceId: 'INV001'
+  },
+  { 
+    id: 'P002', 
+    date: '2023-11-14', 
+    store: 'Bombay Electronics', 
+    amount: 35750, 
+    mode: 'UPI (PhonePe)', 
+    status: 'paid',
+    invoiceId: 'INV002'
+  },
+  { 
+    id: 'P003', 
+    date: '2023-11-14', 
+    store: 'Delhi Sweets', 
+    amount: 12999, 
+    mode: 'Cash', 
+    status: 'paid',
+    invoiceId: 'INV003'
+  },
+  { 
+    id: 'P004', 
+    date: '2023-11-13', 
+    store: 'Mumbai Fashion', 
+    amount: 28499, 
+    mode: 'Net Banking', 
+    status: 'pending',
+    invoiceId: 'INV004'
+  },
+  { 
+    id: 'P005', 
+    date: '2023-11-12', 
+    store: 'Kolkata Books', 
+    amount: 8750, 
+    mode: 'UPI (Paytm)', 
+    status: 'failed',
+    invoiceId: 'INV005'
+  },
+  { 
+    id: 'P006', 
+    date: '2023-11-11', 
+    store: 'Bangalore Tech', 
+    amount: 65000, 
+    mode: 'Credit Card', 
+    status: 'paid',
+    invoiceId: 'INV006'
+  },
+];
+
+const translations = {
+  en: {
+    title: 'Payment Module',
+    subtitle: 'Manage payments and transactions',
+    paymentTransactions: 'Payment Transactions',
+    search: 'Search payments...',
+    generateReport: 'Generate Report',
+    viewInvoice: 'View Invoice',
+    id: 'ID',
+    date: 'Date',
+    store: 'Store',
+    amount: 'Amount',
+    mode: 'Payment Mode',
+    status: 'Status',
+    invoice: 'Invoice',
+    actions: 'Actions',
+    all: 'All',
+    paid: 'Paid',
+    pending: 'Pending',
+    failed: 'Failed',
+  },
+  hi: {
+    title: 'भुगतान मॉड्यूल',
+    subtitle: 'भुगतान और लेनदेन का प्रबंधन करें',
+    paymentTransactions: 'भुगतान लेनदेन',
+    search: 'भुगतान खोजें...',
+    generateReport: 'रिपोर्ट जनरेट करें',
+    viewInvoice: 'चालान देखें',
+    id: 'आईडी',
+    date: 'तारीख',
+    store: 'स्टोर',
+    amount: 'राशि',
+    mode: 'भुगतान मोड',
+    status: 'स्थिति',
+    invoice: 'चालान',
+    actions: 'क्रियाएं',
+    all: 'सभी',
+    paid: 'भुगतान किया गया',
+    pending: 'लंबित',
+    failed: 'विफल',
+  }
+};
+
+const PaymentPage: React.FC<PaymentPageProps> = ({ language }) => {
+  const t = translations[language];
+  const [activeTab, setActiveTab] = React.useState<string>('all');
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat(language === 'en' ? 'en-IN' : 'hi-IN').format(date);
+  };
+  
+  const getStatusTranslation = (status: PaymentStatus) => {
+    switch(status) {
+      case 'paid': return t.paid;
+      case 'pending': return t.pending;
+      case 'failed': return t.failed;
+      default: return status;
+    }
+  };
+  
+  const getStatusClassName = (status: PaymentStatus) => {
+    switch(status) {
+      case 'paid': return 'bg-indian-green bg-opacity-10 border-0 text-indian-green';
+      case 'pending': return 'bg-indian-orange bg-opacity-10 border-0 text-indian-orange';
+      case 'failed': return 'bg-indian-red bg-opacity-10 border-0 text-indian-red';
+      default: return '';
+    }
+  };
+  
+  const filteredPayments = activeTab === 'all' 
+    ? payments 
+    : payments.filter(payment => payment.status === activeTab);
+  
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-bold text-3xl">{t.title}</h1>
+        <p className="text-muted-foreground">{t.subtitle}</p>
+      </div>
+      
+      <Card className="card-hover">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{t.paymentTransactions}</CardTitle>
+          <Button>
+            <Download className="mr-2 h-4 w-4" />
+            {t.generateReport}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t.search}
+                className="w-full pl-9"
+              />
+            </div>
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+              <TabsList>
+                <TabsTrigger value="all">{t.all}</TabsTrigger>
+                <TabsTrigger value="paid">{t.paid}</TabsTrigger>
+                <TabsTrigger value="pending">{t.pending}</TabsTrigger>
+                <TabsTrigger value="failed">{t.failed}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.id}</TableHead>
+                  <TableHead>{t.date}</TableHead>
+                  <TableHead>{t.store}</TableHead>
+                  <TableHead>{t.amount}</TableHead>
+                  <TableHead>{t.mode}</TableHead>
+                  <TableHead>{t.status}</TableHead>
+                  <TableHead className="text-right">{t.actions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPayments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell className="font-medium">{payment.id}</TableCell>
+                    <TableCell>{formatDate(payment.date)}</TableCell>
+                    <TableCell>{payment.store}</TableCell>
+                    <TableCell className="inr">{payment.amount.toLocaleString('en-IN')}</TableCell>
+                    <TableCell>{payment.mode}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={getStatusClassName(payment.status)}
+                      >
+                        {getStatusTranslation(payment.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm">
+                        <FileText className="mr-2 h-4 w-4" />
+                        {t.viewInvoice}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default PaymentPage;
+```
+
+#### Issues Page
+```tsx
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Search, PlusCircle, MessageSquare } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface IssuesPageProps {
+  language: 'en' | 'hi';
+}
+
+type IssueStatus = 'pending' | 'in-progress' | 'resolved';
+type IssuePriority = 'low' | 'medium' | 'high';
+
+interface Issue {
+  id: string;
+  title: string;
+  reporter: string;
+  location: string;
+  dateReported: string;
+  priority: IssuePriority;
+  status: IssueStatus;
+}
+
+const issues: Issue[] = [
+  {
+    id: 'ISS001',
+    title: 'Broken escalator on 2nd floor',
+    reporter: 'Chennai Silks',
+    location: 'East Wing, 2nd Floor',
+    dateReported: '2023-11-14',
+    priority: 'high',
+    status: 'in-progress'
+  },
+  {
+    id: 'ISS002',
+    title: 'Water leakage in restroom',
+    reporter: 'Bombay Electronics',
+    location: 'North Wing, 1st Floor',
+    dateReported: '2023-11-13',
+    priority: 'medium',
+    status: 'pending'
+  },
+  {
+    id: 'ISS003',
+    title: 'Parking ticket machine not working',
+    reporter: 'Customer Service',
+    location: 'Basement Parking B2',
+    dateReported: '2023-11-12',
+    priority: 'high',
+    status: 'resolved'
+  },
+  {
+    id: 'ISS004',
+    title: 'AC not working properly',
+    reporter: 'Delhi Sweets',
+    location: 'Food Court, Ground Floor',
+    dateReported: '2023-11-12',
+    priority: 'medium',
+    status: 'in-progress'
+  },
+  {
+    id: 'ISS005',
+    title: 'Flickering lights',
+    reporter: 'Mumbai Fashion',
+    location: 'South Wing, 3rd Floor',
+    dateReported: '2023-11-11',
+    priority: 'low',
+    status: 'resolved'
+  }
+];
+
+const translations = {
+  en: {
+    title: 'Issues Module',
+    subtitle: 'Track and resolve maintenance and service issues',
+    issuesManagement: 'Issues Management',
+    search: 'Search issues...',
+    reportIssue: 'Report Issue',
+    id: 'ID',
+    issueTitle: 'Issue',
+    reporter: 'Reported By',
+    location: 'Location',
+    dateReported: 'Date Reported',
+    priority: 'Priority',
+    status: 'Status',
+    actions: 'Actions',
+    all: 'All Issues',
+    pending: 'Pending',
+    inProgress: 'In Progress',
+    resolved: 'Resolved',
+    view: 'View Details',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+  },
+  hi: {
+    title: 'मुद्दा मॉड्यूल',
+    subtitle: 'रखरखाव और सेवा संबंधी मुद्दों को ट्रैक और हल करें',
+    issuesManagement: 'मुद्दा प्रबंधन',
+    search: 'मुद्दे खोजें...',
+    reportIssue: 'मुद्दा रिपोर्ट करें',
+    id: 'आईडी',
+    issueTitle: 'मुद्दा',
+    reporter: 'रिपोर्टर',
+    location: 'स्थान',
+    dateReported: 'रिपोर्ट की तारीख',
+    priority: 'प्राथमिकता',
+    status: 'स्थिति',
+    actions: 'क्रियाएं',
+    all: 'सभी मुद्दे',
+    pending: 'लंबित',
+    inProgress: 'प्रगति पर',
+    resolved: 'हल किया गया',
+    view: 'विवरण देखें',
+    low: 'कम',
+    medium: 'मध्यम',
+    high: 'उच्च',
+  }
+};
+
+const IssuesPage: React.FC<IssuesPageProps> = ({ language }) => {
+  const t = translations[language];
+  const [activeTab, setActiveTab] = React.useState<string>('all');
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat(language === 'en' ? 'en-IN' : 'hi-IN').format(date);
+  };
+  
+  const getStatusTranslation = (status: IssueStatus) => {
+    switch(status) {
+      case 'pending': return t.pending;
+      case 'in-progress': return t.inProgress;
+      case 'resolved': return t.resolved;
+      default: return status;
+    }
+  };
+  
+  const getPriorityTranslation = (priority: IssuePriority) => {
+    switch(priority) {
+      case 'low': return t.low;
+      case 'medium': return t.medium;
+      case 'high': return t.high;
+      default: return priority;
+    }
+  };
+  
+  const getStatusClassName = (status: IssueStatus) => {
+    switch(status) {
+      case 'pending': return 'bg-indian-orange bg-opacity-10 border-0 text-indian-orange';
+      case 'in-progress': return 'bg-indian-purple bg-opacity-10 border-0 text-indian-purple';
+      case 'resolved': return 'bg-indian-green bg-opacity-10 border-0 text-indian-green';
+      default: return '';
+    }
+  };
+  
+  const getPriorityClassName = (priority: IssuePriority) => {
+    switch(priority) {
+      case 'low': return 'bg-gray-200 bg-opacity-50 border-0 text-gray-700';
+      case 'medium': return 'bg-indian-orange bg-opacity-10 border-0 text-indian-orange';
+      case 'high': return 'bg-indian-red bg-opacity-10 border-0 text-indian-red';
+      default: return '';
+    }
+  };
+  
+  const filteredIssues = activeTab === 'all' 
+    ? issues 
+    : issues.filter(issue => issue.status === activeTab);
+  
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-bold text-3xl">{t.title}</h1>
+        <p className="text-muted-foreground">{t.subtitle}</p>
+      </div>
+      
+      <Card className="card-hover">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{t.issuesManagement}</CardTitle>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {t.reportIssue}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t.search}
+                className="w-full pl-9"
+              />
+            </div>
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+              <TabsList>
+                <TabsTrigger value="all">{t.all}</TabsTrigger>
+                <TabsTrigger value="pending">{t.pending}</TabsTrigger>
+                <TabsTrigger value="in-progress">{t.inProgress}</TabsTrigger>
+                <TabsTrigger value="resolved">{t.resolved}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.id}</TableHead>
+                  <TableHead>{t.issueTitle}</TableHead>
+                  <TableHead>{t.reporter}</TableHead>
+                  <TableHead>{t.location}</TableHead>
+                  <TableHead>{t.dateReported}</TableHead>
+                  <TableHead>{t.priority}</TableHead>
+                  <TableHead>{t.status}</TableHead>
+                  <TableHead className="text-right">{t.actions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredIssues.map((issue) => (
+                  <TableRow key={issue.id}>
+                    <TableCell className="font-medium">{issue.id}</TableCell>
+                    <TableCell>{issue.title}</TableCell>
+                    <TableCell>{issue.reporter}</TableCell>
+                    <TableCell>{issue.location}</TableCell>
+                    <TableCell>{formatDate(issue.dateReported)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={getPriorityClassName(issue.priority)}
+                      >
+                        {getPriorityTranslation(issue.priority)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={getStatusClassName(issue.status)}
+                      >
+                        {getStatusTranslation(issue.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                        {t.view}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default IssuesPage;
+```
+
+### Components and Utilities
+
+#### Forms
+
+##### TenantForm.tsx
+```tsx
+import React from 'react';
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+
+interface TenantFormProps {
+  language: 'en' | 'hi';
+  initialData?: {
+    id?: string;
+    name?: string;
+    category?: string;
+    location?: string;
+    gstin?: string;
+    status?: 'active' | 'pending' | 'inactive';
+  };
+  onSuccess: () => void;
+}
+
+const TenantForm: React.FC<TenantFormProps> = ({ 
+  language,
+  initialData,
+  onSuccess
+}) => {
+  const translations = {
+    en: {
+      name: "Tenant Name",
+      nameDesc: "Enter the name of the tenant/store",
+      category: "Category",
+      categoryDesc: "Select business category",
+      location: "Location",
+      locationDesc: "Store location in the mall",
+      gstin: "GSTIN",
+      gstinDesc: "Enter valid GST Identification Number",
+      status: "Status",
+      statusDesc: "Current status of the tenant",
+      submit: "Submit",
+      cancel: "Cancel",
+      active: "Active",
+      pending: "Pending",
+      inactive: "Inactive",
+      success: "Tenant saved successfully!",
+      clothing: "Clothing",
+      electronics: "Electronics",
+      foodAndBeverages: "Food & Beverages",
+      fashion: "Fashion",
+      books: "Books & Stationery",
+      others: "Others"
+    },
+    hi: {
+      name: "किरायेदार का नाम",
+      nameDesc: "किरायेदार/स्टोर का नाम दर्ज करें",
+      category: "श्रेणी",
+      categoryDesc: "व्यापार श्रेणी चुनें",
+      location: "स्थान",
+      locationDesc: "मॉल में स्टोर का स्थान",
+      gstin: "जीएसटीआईएन",
+      gstinDesc: "वैध जीएसटी पहचान संख्या दर्ज करें",
+      status: "स्थिति",
+      statusDesc: "किरायेदार की वर्तमान स्थिति",
+      submit: "जमा करें",
+      cancel: "रद्द करें",
+      active: "सक्रिय",
+      pending: "लंबित",
+      inactive: "निष्क्रिय",
+      success: "किरायेदार सफलतापूर्वक सहेजा गया!",
+      clothing: "कपड़े",
+      electronics: "इलेक्ट्रॉनिक्स",
+      foodAndBeverages: "खाद्य और पेय",
+      fashion: "फैशन",
+      books: "किताबें और स्टेशनरी",
+      others: "अन्य"
+    }
+  };
+
+  const t = translations[language];
+  
+  const formSchema = z.object({
+    name: z.string().min(2, {
+      message: language === 'en' ? "Name must be at least 2 characters." : "नाम कम से कम 2 अक्षर का होना चाहिए।",
+    }),
+    category: z.string().min(1, {
+      message: language === 'en' ? "Please select a category." : "कृपया एक श्रेणी चुनें।",
+    }),
+    location: z.string().min(2, {
+      message: language === 'en' ? "Location must be at least 2 characters." : "स्थान कम से कम 2 अक्षर का होना चाहिए।",
+    }),
+    gstin: z.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, {
+      message: language === 'en' ? "Please enter a valid GSTIN." : "कृपया एक वैध GSTIN दर्ज करें।",
+    }),
+    status: z.enum(["active", "pending", "inactive"], {
+      required_error: language === 'en' ? "Please select a status." : "कृपया एक स्थिति चुनें।",
+    }),
+  });
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      category: initialData?.category || "",
+      location: initialData?.location || "",
+      gstin: initialData?.gstin || "",
+      status: initialData?.status || "active",
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    // Here you would typically save to your backend
+    
+    toast.success(t.success);
+    onSuccess();
+  }
+  
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.name}</FormLabel>
+              <FormControl>
+                <Input placeholder={t.nameDesc} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.category}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.categoryDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Clothing">{t.clothing}</SelectItem>
+                  <SelectItem value="Electronics">{t.electronics}</SelectItem>
+                  <SelectItem value="Food & Beverages">{t.foodAndBeverages}</SelectItem>
+                  <SelectItem value="Fashion">{t.fashion}</SelectItem>
+                  <SelectItem value="Books & Stationery">{t.books}</SelectItem>
+                  <SelectItem value="Others">{t.others}</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.location}</FormLabel>
+              <FormControl>
+                <Input placeholder={t.locationDesc} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="gstin"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.gstin}</FormLabel>
+              <FormControl>
+                <Input placeholder={t.gstinDesc} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.status}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.statusDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="active">{t.active}</SelectItem>
+                  <SelectItem value="pending">{t.pending}</SelectItem>
+                  <SelectItem value="inactive">{t.inactive}</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onSuccess}>
+            {t.cancel}
+          </Button>
+          <Button type="submit">{t.submit}</Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
+
+export default TenantForm;
+```
+
+##### InventoryItemForm.tsx
+```tsx
+import React from 'react';
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+
+interface InventoryItemFormProps {
+  language: 'en' | 'hi';
+  initialData?: {
+    id?: string;
+    name?: string;
+    category?: string;
+    store?: string;
+    quantity?: number;
+    price?: number;
+    stockLevel?: 'low' | 'medium' | 'high';
+  };
+  onSuccess: () => void;
+}
+
+const InventoryItemForm: React.FC<InventoryItemFormProps> = ({ 
+  language,
+  initialData,
+  onSuccess
+}) => {
+  const translations = {
+    en: {
+      name: "Item Name",
+      nameDesc: "Enter the name of the item",
+      category: "Category",
+      categoryDesc: "Select item category",
+      store: "Store",
+      storeDesc: "Store that owns this item",
+      quantity: "Quantity",
+      quantityDesc: "Number of items in stock",
+      price: "Price (₹)",
+      priceDesc: "Price per unit in INR",
+      stockLevel: "Stock Level",
+      stockLevelDesc: "Current stock level",
+      submit: "Submit",
+      cancel: "Cancel",
+      low: "Low",
+      medium: "Medium",
+      high: "High",
+      success: "Inventory item saved successfully!",
+      clothing: "Clothing",
+      electronics: "Electronics",
+      food: "Food",
+      fashion: "Fashion",
+      books: "Books",
+      others: "Others"
+    },
+    hi: {
+      name: "आइटम का नाम",
+      nameDesc: "आइटम का नाम दर्ज करें",
+      category: "श्रेणी",
+      categoryDesc: "आइटम श्रेणी चुनें",
+      store: "स्टोर",
+      storeDesc: "स्टोर जिसका यह आइटम है",
+      quantity: "मात्रा",
+      quantityDesc: "स्टॉक में आइटम की संख्या",
+      price: "मूल्य (₹)",
+      priceDesc: "प्रति यूनिट मूल्य (INR में)",
+      stockLevel: "स्टॉक स्तर",
+      stockLevelDesc: "वर्तमान स्टॉक स्तर",
+      submit: "जमा करें",
+      cancel: "रद्द करें",
+      low: "कम",
+      medium: "मध्यम",
+      high: "उच्च",
+      success: "इन्वेंटरी आइटम सफलतापूर्वक सहेजा गया!",
+      clothing: "कपड़े",
+      electronics: "इलेक्ट्रॉनिक्स",
+      food: "खाद्य",
+      fashion: "फैशन",
+      books: "किताबें",
+      others: "अन्य"
+    }
+  };
+
+  const t = translations[language];
+  
+  const stores = [
+    "Chennai Silks",
+    "Bombay Electronics",
+    "Delhi Sweets",
+    "Mumbai Fashion",
+    "Kolkata Books",
+    "Bangalore Tech"
+  ];
+  
+  const formSchema = z.object({
+    name: z.string().min(2, {
+      message: language === 'en' ? "Name must be at least 2 characters." : "नाम कम से कम 2 अक्षर का होना चाहिए।",
+    }),
+    category: z.string().min(1, {
+      message: language === 'en' ? "Please select a category." : "कृपया एक श्रेणी चुनें।",
+    }),
+    store: z.string().min(1, {
+      message: language === 'en' ? "Please select a store." : "कृपया एक स्टोर चुनें।",
+    }),
+    quantity: z.coerce.number().min(1, {
+      message: language === 'en' ? "Quantity must be at least 1." : "मात्रा कम से कम 1 होनी चाहिए।",
+    }),
+    price: z.coerce.number().min(1, {
+      message: language === 'en' ? "Price must be at least 1." : "मूल्य कम से कम 1 होना चाहिए।",
+    }),
+    stockLevel: z.enum(["low", "medium", "high"], {
+      required_error: language === 'en' ? "Please select a stock level." : "कृपया एक स्टॉक स्तर चुनें।",
+    }),
+  });
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      category: initialData?.category || "",
+      store: initialData?.store || "",
+      quantity: initialData?.quantity || 1,
+      price: initialData?.price || 0,
+      stockLevel: initialData?.stockLevel || "medium",
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    // Here you would typically save to your backend
+    
+    toast.success(t.success);
+    onSuccess();
+  }
+  
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.name}</FormLabel>
+              <FormControl>
+                <Input placeholder={t.nameDesc} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.category}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.categoryDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Clothing">{t.clothing}</SelectItem>
+                  <SelectItem value="Electronics">{t.electronics}</SelectItem>
+                  <SelectItem value="Food">{t.food}</SelectItem>
+                  <SelectItem value="Fashion">{t.fashion}</SelectItem>
+                  <SelectItem value="Books">{t.books}</SelectItem>
+                  <SelectItem value="Others">{t.others}</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="store"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.store}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.storeDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {stores.map((store) => (
+                    <SelectItem key={store} value={store}>
+                      {store}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.quantity}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder={t.quantityDesc} 
+                    {...field} 
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.price}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder={t.priceDesc} 
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <FormField
+          control={form.control}
+          name="stockLevel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.stockLevel}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.stockLevelDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="low">{t.low}</SelectItem>
+                  <SelectItem value="medium">{t.medium}</SelectItem>
+                  <SelectItem value="high">{t.high}</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onSuccess}>
+            {t.cancel}
+          </Button>
+          <Button type="submit">{t.submit}</Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
+
+export default InventoryItemForm;
+```
+
+##### PurchaseItemForm.tsx
+```tsx
+import React from 'react';
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+interface PurchaseItemFormProps {
+  language: 'en' | 'hi';
+  initialData?: {
+    id?: string;
+    vendor?: string;
+    date?: string;
+    items?: number;
+    value?: string;
+    status?: 'completed' | 'pending' | 'processing';
+  };
+  onSuccess: () => void;
+}
+
+const PurchaseItemForm: React.FC<PurchaseItemFormProps> = ({ 
+  language,
+  initialData,
+  onSuccess
+}) => {
+  const translations = {
+    en: {
+      vendor: "Vendor Name",
+      vendorDesc: "Enter vendor/supplier name",
+      date: "Purchase Date",
+      dateDesc: "Select purchase date",
+      items: "Number of Items",
+      itemsDesc: "Total items in purchase",
+      value: "Purchase Value (₹)",
+      valueDesc: "Total value in INR",
+      status: "Status",
+      statusDesc: "Current status",
+      submit: "Submit",
+      cancel: "Cancel",
+      completed: "Completed",
+      pending: "Pending",
+      processing: "Processing",
+      success: "Purchase order saved successfully!",
+      pickDate: "Pick a date",
+    },
+    hi: {
+      vendor: "विक्रेता का नाम",
+      vendorDesc: "विक्रेता/आपूर्तिकर्ता का नाम दर्ज करें",
+      date: "खरीद की तारीख",
+      dateDesc: "खरीद की तारीख चुनें",
+      items: "आइटम की संख्या",
+      itemsDesc: "खरीद में कुल आइटम",
+      value: "खरीद मूल्य (₹)",
+      valueDesc: "कुल मूल्य (INR में)",
+      status: "स्थिति",
+      statusDesc: "वर्तमान स्थिति",
+      submit: "जमा करें",
+      cancel: "रद्द करें",
+      completed: "पूरा हुआ",
+      pending: "लंबित",
+      processing: "प्रसंस्करण",
+      success: "खरीद आदेश सफलतापूर्वक सहेजा गया!",
+      pickDate: "तारीख चुनें",
+    }
+  };
+
+  const t = translations[language];
+  
+  const vendors = [
+    "ABC Supplies",
+    "XYZ Distributors",
+    "Global Imports",
+    "Metro Suppliers",
+    "City Wholesalers",
+    "Prime Vendors"
+  ];
+  
+  const formSchema = z.object({
+    vendor: z.string().min(2, {
+      message: language === 'en' ? "Vendor name must be at least 2 characters." : "विक्रेता का नाम कम से कम 2 अक्षर का होना चाहिए।",
+    }),
+    date: z.date({
+      required_error: language === 'en' ? "Date is required." : "तारीख आवश्यक है।",
+    }),
+    items: z.coerce.number().min(1, {
+      message: language === 'en' ? "Items must be at least 1." : "आइटम कम से कम 1 होना चाहिए।",
+    }),
+    value: z.string().min(1, {
+      message: language === 'en' ? "Value is required." : "मूल्य आवश्यक है।",
+    }),
+    status: z.enum(["completed", "pending", "processing"], {
+      required_error: language === 'en' ? "Please select a status." : "कृपया एक स्थिति चुनें।",
+    }),
+  });
+
+  // Parse initialData.date if it exists
+  let initialDate: Date | undefined;
+  if (initialData?.date) {
+    try {
+      initialDate = new Date(initialData.date);
+    } catch (e) {
+      // If date parsing fails, leave it undefined
+      console.error("Failed to parse date:", initialData.date);
+    }
+  }
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      vendor: initialData?.vendor || "",
+      date: initialDate || new Date(),
+      items: initialData?.items || 1,
+      value: initialData?.value ? initialData.value.replace(/[₹,]/g, '') : "",
+      status: initialData?.status || "pending",
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    // Here you would typically save to your backend
+    
+    toast.success(t.success);
+    onSuccess();
+  }
+  
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="vendor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.vendor}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.vendorDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {vendors.map((vendor) => (
+                    <SelectItem key={vendor} value={vendor}>
+                      {vendor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>{t.date}</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>{t.dateDesc}</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={(date) => date && field.onChange(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="items"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.items}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder={t.itemsDesc} 
+                    {...field} 
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="value"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.value}</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder={t.valueDesc} 
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.status}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.statusDesc} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="completed">{t.completed}</SelectItem>
+                  <SelectItem value="pending">{t.pending}</SelectItem>
+                  <SelectItem value="processing">{t.processing}</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onSuccess}>
+            {t.cancel}
+          </Button>
+          <Button type="submit">{t.submit}</Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
+
+export default PurchaseItemForm;
+```
+
+#### Dashboard Components
+
+##### StatCard.tsx
+```tsx
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
+  description?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon,
+  trend,
+  description,
+}) => {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="bg-secondary rounded-md p-2">
+            {icon}
+          </div>
+        </div>
+        <div className="mt-4">
+          <h3 className="text-2xl font-bold">{value}</h3>
+          {trend && (
+            <div className="flex items-center mt-1">
+              <span className={trend.isPositive ? 'text-indian-green' : 'text-indian-red'}>
+                {trend.isPositive ? (
+                  <ArrowUpIcon className="h-4 w-4" />
+                ) : (
+                  <ArrowDownIcon className="h-4 w-4" />
+                )}
+              </span>
+              <span className={`text-xs font-medium ${trend.isPositive ? 'text-indian-green' : 'text-indian-red'}`}>
+                {trend.value}%
+              </span>
+              {description && <span className="text-xs text-muted-foreground ml-1">{description}</span>}
+            </div>
+          )}
+          {!trend && description && (
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default StatCard;
+```
+
+##### RevenueChart.tsx
+```tsx
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Legend,
+} from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface RevenueChartProps {
+  language: 'en' | 'hi';
+}
+
+const translations = {
+  en: {
+    title: 'Revenue Analytics',
+    lastMonth: 'Last Month',
+    thisYear: 'This Year',
+    monthly: 'Monthly Revenue',
+    category: 'Revenue by Category',
+    jan: 'Jan',
+    feb: 'Feb',
+    mar: 'Mar',
+    apr: 'Apr',
+    may: 'May',
+    jun: 'Jun',
+    jul: 'Jul',
+    aug: 'Aug',
+    sep: 'Sep',
+    oct: 'Oct',
+    nov: 'Nov',
+    dec: 'Dec',
+    clothing: 'Clothing',
+    electronics: 'Electronics',
+    food: 'Food',
+    fashion: 'Fashion',
+    books: 'Books',
+    others: 'Others',
+  },
+  hi: {
+    title: 'राजस्व विश्लेषिकी',
+    lastMonth: 'पिछला महीना',
+    thisYear: 'इस साल',
+    monthly: 'मासिक राजस्व',
+    category: 'श्रेणी के अनुसार राजस्व',
+    jan: 'जन',
+    feb: 'फर',
+    mar: 'मार्च',
+    apr: 'अप्रैल',
+    may: 'मई',
+    jun: 'जून',
+    jul: 'जुल',
+    aug: 'अग',
+    sep: 'सित',
+    oct: 'अक्टू',
+    nov: 'नव',
+    dec: 'दिस',
+    clothing: 'कपड़े',
+    electronics: 'इलेक्ट्रॉनिक्स',
+    food: 'खाद्य',
+    fashion: 'फैशन',
+    books: 'किताबें',
+    others: 'अन्य',
+  }
+};
+
+const monthlyData = [
+  {
+    name: 'Jan',
+    revenue: 2500000,
+  },
+  {
+    name: 'Feb',
+    revenue: 3200000,
+  },
+  {
+    name: 'Mar',
+    revenue: 2800000,
+  },
+  {
+    name: 'Apr',
+    revenue: 2900000,
+  },
+  {
+    name: 'May',
+    revenue: 3500000,
+  },
+  {
+    name: 'Jun',
+    revenue: 3100000,
+  },
+  {
+    name: 'Jul',
+    revenue: 3350000,
+  },
+  {
+    name: 'Aug',
+    revenue: 3800000,
+  },
+  {
+    name: 'Sep',
+    revenue: 3600000,
+  },
+  {
+    name: 'Oct',
+    revenue: 3900000,
+  },
+  {
+    name: 'Nov',
+    revenue: 4100000,
+  },
+  {
+    name: 'Dec',
+    revenue: 4500000,
+  },
+];
+
+const categoryData = [
+  {
+    name: 'Clothing',
+    revenue: 12000000,
+  },
+  {
+    name: 'Electronics',
+    revenue: 18000000,
+  },
+  {
+    name: 'Food',
+    revenue: 6000000,
+  },
+  {
+    name: 'Fashion',
+    revenue: 9000000,
+  },
+  {
+    name: 'Books',
+    revenue: 3000000,
+  },
+  {
+    name: 'Others',
+    revenue: 4000000,
+  },
+];
+
+const RevenueChart: React.FC<RevenueChartProps> = ({ language }) => {
+  const t = translations[language];
+  
+  const formatMonthlyData = monthlyData.map(item => ({
+    name: t[item.name.toLowerCase() as keyof typeof t] || item.name,
+    revenue: item.revenue,
+  }));
+  
+  const formatCategoryData = categoryData.map(item => ({
+    name: t[item.name.toLowerCase() as keyof typeof t] || item.name,
+    revenue: item.revenue,
+  }));
+  
+  const formatINR = (value: number) => {
+    return `₹${(value / 100000).toFixed(1)}L`;
+  };
+  
+  return (
+    <Card className="col-span-3 card-hover">
+      <CardHeader className="pb-2">
+        <CardTitle>{t.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="monthly">
+          <TabsList className="mb-4">
+            <TabsTrigger value="monthly">{t.monthly}</TabsTrigger>
+            <TabsTrigger value="category">{t.category}</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="monthly" className="space-y-4">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={formatMonthlyData}
+                  margin={{
+                    top: 10,
+                    right: 30,
+                    left: 0,
+                    bottom: 0,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={formatINR} />
+                  <Tooltip formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, '']} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#6E59A5" 
+                    fill="#6E59A5"
+                    fillOpacity={0.2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="category">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={formatCategoryData}
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 0,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={formatINR} />
+                  <Tooltip formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, '']} />
+                  <Legend />
+                  <Bar dataKey="revenue" fill="#6E59A5" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default RevenueChart;
+```
+
+##### RecentTransactions.tsx
+```tsx
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+
+interface RecentTransactionsProps {
+  language: 'en' | 'hi';
+}
+
+const transactions = [
+  { id: 'T123', store: 'Chennai Silks', amount: 42500, type: 'credit', date: '2023-11-15' },
+  { id: 'T124', store: 'Maintenance', amount: 35000, type: 'debit', date: '2023-11-14' },
+  { id: 'T125', store: 'Bombay Electronics', amount: 35750, type: 'credit', date: '2023-11-14' },
+  { id: 'T126', store: 'Utilities', amount: 28000, type: 'debit', date: '2023-11-13' },
+  { id: 'T127', store: 'Delhi Sweets', amount: 12999, type: 'credit', date: '2023-11-13' },
+];
+
+const translations = {
+  en: {
+    title: 'Recent Transactions',
+    store: 'Store/Category',
+    amount: 'Amount',
+    credit: 'Credit',
+    debit: 'Debit',
+    viewAll: 'View all',
+  },
+  hi: {
+    title: 'हाल के लेनदेन',
+    store: 'स्टोर/श्रेणी',
+    amount: 'राशि',
+    credit: 'क्रेडिट',
+    debit: 'डेबिट',
+    viewAll: 'सभी देखें',
+  }
+};
+
+const RecentTransactions: React.FC<RecentTransactionsProps> = ({ language }) => {
+  const t = translations[language];
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat(language === 'en' ? 'en-IN' : 'hi-IN', { 
+      day: 'numeric', 
+      month: 'short'
+    }).format(date);
+  };
+  
+  return (
+    <Card className="col-span-1 card-hover">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-md font-medium">{t.title}</CardTitle>
+        <button className="text-sm text-blue-500 hover:underline">
+          {t.viewAll}
+        </button>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {transactions.map((transaction) => (
+            <div key={transaction.id} className="flex justify-between items-center">
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  {transaction.store}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(transaction.date)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">
+                  ₹{transaction.amount.toLocaleString('en-IN')}
+                </p>
+                <Badge 
+                  variant="outline"
+                  className={
+                    transaction.type === 'credit' 
+                      ? 'bg-green-50 text-green-700 border-0' 
+                      : 'bg-red-50 text-red-700 border-0'
+                  }
+                >
+                  {transaction.type === 'credit' ? t.credit : t.debit}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default RecentTransactions;
+```
+
+## CSS and Styling
+
+### index.css
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+    --primary: 270 50% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 215 20.2% 65.1%;
+    --radius: 0.5rem;
+    --indian-red: 0 68% 42%;
+    --indian-green: 142 72% 29%;
+    --indian-orange: 28 92% 53%;
+    --indian-purple: 270 50% 50%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --primary: 270 50% 60%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 216 34% 17%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .card-hover {
+    @apply transition-shadow hover:shadow-md;
+  }
+  
+  .inr::before {
+    content: "₹";
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+```
+
+## Utility Functions (utils.ts)
+```typescript
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+```
+
+This comprehensive codebase demonstrates the Mall Magic system, which is built using React, TypeScript, and Tailwind CSS. The application provides a dashboard for mall management with modules for administration, sales tracking, inventory management, purchase orders, payment tracking, and issue reporting. The system features a responsive design, bilingual support (English and Hindi), and uses shadcn/ui components for consistent UI elements across all modules.
